@@ -9,19 +9,21 @@ import java.awt.Shape;
 
 import org.spacegame.Laser;
 
-public class Square extends Entity {
-	private static Random r = new Random();
+public class Mob extends Entity {
+	protected static Random r = new Random();
 	public static final int SHOOT = 1;
 
+	public double vmaxx, vmaxy;
+
 	public int w, h;
-	private double vx, vy, m;
-	private double fx, fy;
+	protected double vx, vy, m;
+	protected double fx, fy;
 
-	private int lastShot;
-	private int shotDelay;
-	private int deathAnim, maxDeathAnim;
+	protected int lastShot;
+	protected int shotDelay;
+	protected int deathAnim, maxDeathAnim;
 
-	public Square(int x, int y, int w, int h, double vx, double vy) {
+	public Mob(int x, int y, int w, int h, double vx, double vy) {
 		super (x, y);
 
 		this.vx = vx;
@@ -36,6 +38,7 @@ public class Square extends Entity {
 
 		lastShot = 0;
 		shotDelay = 3;
+		deathAnim = 0;
 		maxDeathAnim = 10;
 	}
 
@@ -46,52 +49,23 @@ public class Square extends Entity {
 		x = x + (int) (vx*millis);
 		y = y + (int) (vy*millis);
 
-		if (x <= 0 || x >= 400) {
-			x = x <= 0 ? 1 : 349;
-			vx = -vx;
-		} 
-
-		if (y <= 0 || y >= 700) {
-			y = y <= 0 ? 1 :699;
-			vy = -vy;
-		}
-
-		if(shouldDie) {
-			deathAnim++;
-		}
-
 		lastShot++;
-	}
-
-	public void paint(Graphics g) {
-		if(!shouldDie) {
-			g.setColor(Color.YELLOW);
-			g.fillRect(x, y, w, h);
-		} else {
-			g.setColor(Color.YELLOW);
-
-			g.fillRect(x-deathAnim, y-deathAnim, w/4, h/4);
-			g.fillRect(x+deathAnim, y-deathAnim, w/4, h/4);
-			g.fillRect(x-deathAnim, y+deathAnim, w/4, h/4);
-			g.fillRect(x+deathAnim, y+deathAnim, w/4, h/4);			
-		}
-		
 	}
 
 	@Override
 	public void move(Direction d) {
 		switch(d) {
 			case UP:
-				vy = -0.05;
+				vy = -vmaxy;
 				break;
 			case DOWN:
-				vy = 0.05;
+				vy = vmaxy;
 				break;
 			case LEFT:
-				vx = -0.05;
+				vx = -vmaxx;
 				break;
 			case RIGHT:
-				vx = 0.05;
+				vx = vmaxx;
 				break;
 			case STOPPED_VERTICAL:
 				vy = 0.0;
@@ -110,27 +84,8 @@ public class Square extends Entity {
 		} else return null;
 	}
 
-	@Override
-	public Shape getShape() {
-		return new Rectangle(x, y, w, h);
-	}
-
 	public boolean canShoot() {
 		if (lastShot > shotDelay) return true;
-		else return false;
-	}
-
-	@Override
-	public void handleCollision(Entity e) {
-		if (e instanceof Laser && !shouldDie) {
-			shouldDie = true;
-			deathAnim = 0;
-		}
-	}
-
-	@Override
-	public boolean isDead() {
-		if(shouldDie && deathAnim > maxDeathAnim) return true;
 		else return false;
 	}
 
@@ -145,5 +100,11 @@ public class Square extends Entity {
 		if (y < by) y = by;
 		if (x+w > bx+bw) x = bx+bw-w;
 		if (y+h > by+bh) y = by+bh-h;
+	}
+
+	@Override
+	public boolean isDead() {
+		if(shouldDie && deathAnim > maxDeathAnim) return true;
+		else return false;
 	}
 }

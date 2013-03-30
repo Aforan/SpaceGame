@@ -22,14 +22,6 @@ public class Laser extends Entity {
 	public void tick(double millis) {
 		x = x + (int) (vx*millis);
 		y = y + (int) (vy*millis);
-
-		if (x <= 0 || x >= 400) {
-			shouldDie = true;
-		} 
-
-		if (y <= 0 || y >= 700) {
-			shouldDie = true;
-		}
 	}
 
 	@Override
@@ -52,5 +44,10 @@ public class Laser extends Entity {
 	@Override
 	public boolean isDead() {
 		return shouldDie;
+	}
+
+	@Override
+	public void outOfBounds(Rectangle bounds) {
+		shouldDie = true;
 	}
 }

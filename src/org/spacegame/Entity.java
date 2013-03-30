@@ -30,7 +30,7 @@ public class Entity {
 		return null;
 	}
 
-
+	public void outOfBounds(Rectangle bounds) { }
 
 	public enum Direction {
 		UP, DOWN, LEFT, RIGHT, STOPPED_VERTICAL, STOPPED_HORIZONTAL;

@@ -16,31 +16,51 @@ import org.spacegame.Square;
 import org.spacegame.InputHandler;
 
 public class SpaceGame extends JPanel implements Runnable{
+	
+	public static final int TICK_TIME = 60;
 
 	private static final Random random = new Random();
-	private static final int TICK_TIME = 60;
 	private static double version = 0.01;
+	private Rectangle bounds;
 	private ArrayList<Entity> gameEntities;
 	private InputHandler ih;
 	private Entity player;
+	private AsteroidHandler ah;
 
 	public SpaceGame(int w, int h) {
 		super(true);
 		setMaximumSize(new Dimension(w, h));
+		setSize(new Dimension(w, h));
+
 		init();
+
+		int nw = getWidth()-getInsets().right-getInsets().left;
+		int nh = getHeight()-getInsets().top-getInsets().bottom;
+		
+		System.out.println(nw + ", " + nh);
+
+		bounds = new Rectangle(0, 0, w, h-getInsets().top);
+		System.out.println(bounds.height);
 	}
 
 	public void init() {
 		System.out.println("initializing");
 		gameEntities = new ArrayList<Entity>();
 
-		player = new Triangle(100, 100, 25, 25, 0, 0);
+		player = new Triangle(100, 500, 25, 25, 0, 0);
 		gameEntities.add(player);
+
+		ArrayList<Entity> asteroidList = new ArrayList<Entity>();
 
 		for (int i = 0; i < 15; i++) {
 			Square enemy = new Square(random.nextInt(200), random.nextInt(200), 25, 25, 0, 0);
 			gameEntities.add(enemy);
+			asteroidList.add(enemy);
 		}
+
+		ah = new AsteroidHandler(asteroidList);
+		Thread thread = new Thread(ah);
+		thread.start();
 
 		ih = new InputHandler();
 		setFocusable(true);
@@ -102,31 +122,19 @@ public class SpaceGame extends JPanel implements Runnable{
 
 	private void update() {
 		handleInput();
-		handleCollisions();
 
 		Graphics g = getGraphics();
 		clearScreen(g);
 
 		ArrayList<Entity> del = new ArrayList<Entity>();
+		ah.tick();
+		handleCollisions();
+		System.out.println("x: " + player.x + " y: " + player.y + " " + bounds.width + " " + bounds.height + " " + bounds.x + " " + bounds.y);
 
 		for (Entity e : gameEntities) {
-			e.tick(TICK_TIME);
 
-			if (e instanceof Square) {
-				if(e.shouldDie) {
-					e.move(Entity.Direction.STOPPED_VERTICAL);
-					e.move(Entity.Direction.STOPPED_HORIZONTAL);
-
-				} else {
-					double r = random.nextDouble();
-
-					if(r < 0.16) e.move(Entity.Direction.UP);
-					else if(r < 0.32) e.move(Entity.Direction.DOWN);
-					else if(r < 0.48) e.move(Entity.Direction.LEFT);
-					else if(r < 0.64) e.move(Entity.Direction.RIGHT);
-					else if(r < 0.8) e.move(Entity.Direction.STOPPED_VERTICAL);
-					else e.move(Entity.Direction.STOPPED_HORIZONTAL);
-				}
+			if (!(e instanceof Square)) {
+				e.tick(TICK_TIME);
 			}
 
 			if (e.isDead()) {
@@ -135,7 +143,6 @@ public class SpaceGame extends JPanel implements Runnable{
 			}
 			e.paint(g);
 		}
-
 
 		for (Entity e : del) {
 			gameEntities.remove(e);
@@ -147,12 +154,15 @@ public class SpaceGame extends JPanel implements Runnable{
 	private void handleCollisions() {
 		for (Entity a : gameEntities) {
 			Shape ashape = a.getShape();
+
+			if (!bounds.contains((Rectangle)a.getShape())) a.outOfBounds(bounds);
+
 			for (Entity b : gameEntities) {
 				Shape bshape = b.getShape();
 
 				if (ashape instanceof Rectangle) {
 					if (a != b && ashape.intersects((Rectangle)bshape)) {
-						System.out.println("Collision!" + a + " -> " + b);
+						//System.out.println("Collision!" + a + " -> " + b);
 						a.handleCollision(b);
 						b.handleCollision(a);
 					}
@@ -171,11 +181,11 @@ public class SpaceGame extends JPanel implements Runnable{
 
 		JFrame frame = new JFrame("Space Game v" + version);
 		frame.setSize(new Dimension(450, 700));
-		frame.setMaximumSize(new Dimension(350, 700));
-		frame.setResizable(false);
+		//frame.setMaximumSize(new Dimension(450, 700));
+		//frame.setResizable(false);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		SpaceGame game = new SpaceGame(300, 600);
+		SpaceGame game = new SpaceGame(450, 700);
 		frame.getContentPane().add(game);
 
 		frame.setVisible(true);
