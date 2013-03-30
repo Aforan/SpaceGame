@@ -1,0 +1,3 @@
+#!/bin/sh
+cd bin/
+java org.spacegame.SpaceGame
