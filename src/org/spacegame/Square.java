@@ -9,7 +9,7 @@ import java.awt.Shape;
 
 import org.spacegame.Laser;
 
-public class Triangle extends Entity {
+public class Square extends Entity {
 	private static Random r = new Random();
 	public static final int SHOOT = 1;
 
@@ -19,8 +19,9 @@ public class Triangle extends Entity {
 
 	private int lastShot;
 	private int shotDelay;
+	private int deathAnim, maxDeathAnim;
 
-	public Triangle(int x, int y, int w, int h, double vx, double vy) {
+	public Square(int x, int y, int w, int h, double vx, double vy) {
 		super (x, y);
 
 		this.vx = vx;
@@ -35,6 +36,7 @@ public class Triangle extends Entity {
 
 		lastShot = 0;
 		shotDelay = 3;
+		maxDeathAnim = 10;
 	}
 
 	public void tick(double millis) {
@@ -54,14 +56,26 @@ public class Triangle extends Entity {
 			vy = -vy;
 		}
 
+		if(shouldDie) {
+			deathAnim++;
+		}
+
 		lastShot++;
 	}
 
 	public void paint(Graphics g) {
-		g.setColor(Color.RED);
-		int[] xp = {x+w/2, x, x+w};
-		int[] yp = {y, y+h, y+h};
-		g.fillPolygon(new Polygon(xp, yp, 3));
+		if(!shouldDie) {
+			g.setColor(Color.YELLOW);
+			g.fillRect(x, y, w, h);
+		} else {
+			g.setColor(Color.YELLOW);
+
+			g.fillRect(x-deathAnim, y-deathAnim, w/4, h/4);
+			g.fillRect(x+deathAnim, y-deathAnim, w/4, h/4);
+			g.fillRect(x-deathAnim, y+deathAnim, w/4, h/4);
+			g.fillRect(x+deathAnim, y+deathAnim, w/4, h/4);			
+		}
+		
 	}
 
 	@Override
@@ -96,15 +110,27 @@ public class Triangle extends Entity {
 		} else return null;
 	}
 
+	@Override
+	public Shape getShape() {
+		return new Rectangle(x, y, w, h);
+	}
+
 	public boolean canShoot() {
 		if (lastShot > shotDelay) return true;
 		else return false;
 	}
 
 	@Override
-	public Shape getShape() {
-		int[] xp = {x+w/2, x, x+w};
-		int[] yp = {y, y+h, y+h};
-		return new Polygon(xp, yp, 3).getBounds();
+	public void handleCollision(Entity e) {
+		if (e instanceof Laser) {
+			shouldDie = true;
+			deathAnim = 0;
+		}
+	}
+
+	@Override
+	public boolean isDead() {
+		if(shouldDie && deathAnim > maxDeathAnim) return true;
+		else return false;
 	}
 }

@@ -6,12 +6,18 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import java.awt.Color;
+import java.util.Random;
+import java.awt.Rectangle;
+import java.awt.Shape;
 
 import org.spacegame.Entity;
 import org.spacegame.Triangle;
+import org.spacegame.Square;
 import org.spacegame.InputHandler;
 
 public class SpaceGame extends JPanel implements Runnable{
+
+	private static final Random random = new Random();
 	private static final int TICK_TIME = 60;
 	private static double version = 0.01;
 	private ArrayList<Entity> gameEntities;
@@ -30,6 +36,11 @@ public class SpaceGame extends JPanel implements Runnable{
 
 		player = new Triangle(100, 100, 25, 25, 0, 0);
 		gameEntities.add(player);
+
+		for (int i = 0; i < 15; i++) {
+			Square enemy = new Square(random.nextInt(200), random.nextInt(200), 25, 25, 0, 0);
+			gameEntities.add(enemy);
+		}
 
 		ih = new InputHandler();
 		setFocusable(true);
@@ -91,6 +102,7 @@ public class SpaceGame extends JPanel implements Runnable{
 
 	private void update() {
 		handleInput();
+		handleCollisions();
 
 		Graphics g = getGraphics();
 		clearScreen(g);
@@ -100,7 +112,24 @@ public class SpaceGame extends JPanel implements Runnable{
 		for (Entity e : gameEntities) {
 			e.tick(TICK_TIME);
 
-			if (e.shouldDie) {
+			if (e instanceof Square) {
+				if(e.shouldDie) {
+					e.move(Entity.Direction.STOPPED_VERTICAL);
+					e.move(Entity.Direction.STOPPED_HORIZONTAL);
+
+				} else {
+					double r = random.nextDouble();
+
+					if(r < 0.16) e.move(Entity.Direction.UP);
+					else if(r < 0.32) e.move(Entity.Direction.DOWN);
+					else if(r < 0.48) e.move(Entity.Direction.LEFT);
+					else if(r < 0.64) e.move(Entity.Direction.RIGHT);
+					else if(r < 0.8) e.move(Entity.Direction.STOPPED_VERTICAL);
+					else e.move(Entity.Direction.STOPPED_HORIZONTAL);
+				}
+			}
+
+			if (e.isDead()) {
 				del.add(e);
 				continue;
 			}
@@ -113,6 +142,23 @@ public class SpaceGame extends JPanel implements Runnable{
 		}
 
 		paintComponent(g);		
+	}
+
+	private void handleCollisions() {
+		for (Entity a : gameEntities) {
+			Shape ashape = a.getShape();
+			for (Entity b : gameEntities) {
+				Shape bshape = b.getShape();
+
+				if (ashape instanceof Rectangle) {
+					if (a != b && ashape.intersects((Rectangle)bshape)) {
+						System.out.println("Collision!" + a + " -> " + b);
+						a.handleCollision(b);
+						b.handleCollision(a);
+					}
+				}
+			}
+		}
 	}
 
 	private void clearScreen(Graphics g) {

@@ -1,8 +1,12 @@
 package org.spacegame;
 
 import org.spacegame.Entity;
+import org.spacegame.Triangle;
+
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.Shape;
 
 public class Laser extends Entity {
 	private static final double Y_VEL = -0.25;
@@ -14,6 +18,7 @@ public class Laser extends Entity {
 		this.vx = 0.0;
 		this.vy = Y_VEL;
 	}
+
 	public void tick(double millis) {
 		x = x + (int) (vx*millis);
 		y = y + (int) (vy*millis);
@@ -27,8 +32,25 @@ public class Laser extends Entity {
 		}
 	}
 
+	@Override
+	public Shape getShape() {
+		return new Rectangle(x, y, 3, 15);
+	}
+
 	public void paint(Graphics g) {
-		g.setColor(Color.WHITE);
-		g.fillRect(x, y, 5, 15);
+		g.setColor(Color.BLUE);
+		g.fillRect(x, y, 3, 15);
+	}
+
+	@Override
+	public void handleCollision(Entity e) {
+		if (!(e instanceof Laser) && !(e instanceof Triangle)) {
+			shouldDie = true;
+		}
+	}
+
+	@Override
+	public boolean isDead() {
+		return shouldDie;
 	}
 }
