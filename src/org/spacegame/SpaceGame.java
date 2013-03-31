@@ -26,6 +26,7 @@ public class SpaceGame extends JPanel implements Runnable{
 	private InputHandler ih;
 	private Entity player;
 	private AsteroidHandler ah;
+	private AsteroidGenerator ag;
 
 	public SpaceGame(int w, int h) {
 		super(true);
@@ -52,12 +53,6 @@ public class SpaceGame extends JPanel implements Runnable{
 
 		ArrayList<Entity> asteroidList = new ArrayList<Entity>();
 
-		for (int i = 0; i < 15; i++) {
-			Square enemy = new Square(random.nextInt(200), random.nextInt(200), 25, 25, 0, 0);
-			gameEntities.add(enemy);
-			asteroidList.add(enemy);
-		}
-
 		ah = new AsteroidHandler(asteroidList);
 		Thread thread = new Thread(ah);
 		thread.start();
@@ -65,6 +60,8 @@ public class SpaceGame extends JPanel implements Runnable{
 		ih = new InputHandler();
 		setFocusable(true);
 		addKeyListener(ih);
+
+		ag = new AsteroidGenerator(0.15);
 	}
 
 	@Override
@@ -126,10 +123,15 @@ public class SpaceGame extends JPanel implements Runnable{
 		Graphics g = getGraphics();
 		clearScreen(g);
 
-		ArrayList<Entity> del = new ArrayList<Entity>();
 		ah.tick();
+		ag.tick();
+
+		getNewEntities();
+
+		ArrayList<Entity> del = new ArrayList<Entity>();
+
 		handleCollisions();
-		System.out.println("x: " + player.x + " y: " + player.y + " " + bounds.width + " " + bounds.height + " " + bounds.x + " " + bounds.y);
+		//System.out.println("x: " + player.x + " y: " + player.y + " " + bounds.width + " " + bounds.height + " " + bounds.x + " " + bounds.y);
 
 		for (Entity e : gameEntities) {
 
@@ -145,10 +147,22 @@ public class SpaceGame extends JPanel implements Runnable{
 		}
 
 		for (Entity e : del) {
+			if(e instanceof Triangle) {
+				System.out.println("Player died");
+			}
 			gameEntities.remove(e);
 		}
 
 		paintComponent(g);		
+	}
+
+	private void getNewEntities() {
+		ArrayList<Entity> add = ag.getAsteroids();
+
+		for (Entity e : add) {
+			gameEntities.add(e);
+			ah.addAsteroid(e);
+		}
 	}
 
 	private void handleCollisions() {

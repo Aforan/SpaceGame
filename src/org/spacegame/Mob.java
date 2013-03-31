@@ -23,7 +23,7 @@ public class Mob extends Entity {
 	protected int shotDelay;
 	protected int deathAnim, maxDeathAnim;
 
-	public Mob(int x, int y, int w, int h, double vx, double vy) {
+	public Mob(int x, int y, int w, int h, double vx, double vy, double vmaxx, double vmaxy) {
 		super (x, y);
 
 		this.vx = vx;
@@ -40,6 +40,9 @@ public class Mob extends Entity {
 		shotDelay = 3;
 		deathAnim = 0;
 		maxDeathAnim = 10;
+
+		this.vmaxx = vmaxx;
+		this.vmaxy = vmaxy;
 	}
 
 	public void tick(double millis) {
@@ -48,6 +51,10 @@ public class Mob extends Entity {
 
 		x = x + (int) (vx*millis);
 		y = y + (int) (vy*millis);
+
+		if(shouldDie) {
+			deathAnim++;
+		}
 
 		lastShot++;
 	}

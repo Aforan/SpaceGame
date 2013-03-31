@@ -13,13 +13,21 @@ public class AsteroidHandler implements Runnable{
 
 	private ArrayList<Entity> asteroidList;
 	private Semaphore lock = new Semaphore(1);
+	private Semaphore listLock = new Semaphore(1);
 
 	public AsteroidHandler(ArrayList<Entity> asteroidList) {
 		this.asteroidList = asteroidList;
 	}
 
 	public void addAsteroid(Entity e) {
-		asteroidList.add(e);
+		try {
+			listLock.acquire();
+			asteroidList.add(e);
+			listLock.release();
+		} catch (Exception ex) {
+			ex.printStackTrace();	
+		} 
+		
 	}
 
 	public void removeAsteroid(Entity e) {
@@ -39,33 +47,26 @@ public class AsteroidHandler implements Runnable{
 				synchronized(lock) {
 					lock.wait();
 				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		
 
-			for (Entity e : asteroidList) {
-				e.tick(SpaceGame.TICK_TIME);
+				listLock.acquire();
+				for (Entity e : asteroidList) {
+					e.tick(SpaceGame.TICK_TIME);
 
-				if (e instanceof Square) {
-					if(e.shouldDie) {
-						e.move(Entity.Direction.STOPPED_VERTICAL);
-						e.move(Entity.Direction.STOPPED_HORIZONTAL);
+					if (e instanceof Square) {
+						if(e.shouldDie) {
+							e.move(Entity.Direction.STOPPED_VERTICAL);
+							e.move(Entity.Direction.STOPPED_HORIZONTAL);
 
-					} else {
-					/*	double r = random.nextDouble();
+						} else {
 
-						if(r < 0.16) e.move(Entity.Direction.UP);
-						else if(r < 0.32) e.move(Entity.Direction.DOWN);
-						else if(r < 0.48) e.move(Entity.Direction.LEFT);
-						else if(r < 0.64) e.move(Entity.Direction.RIGHT);
-						else if(r < 0.8) e.move(Entity.Direction.STOPPED_VERTICAL);
-						else e.move(Entity.Direction.STOPPED_HORIZONTAL);
-					*/
-
-						e.move(Entity.Direction.DOWN);
+							e.move(Entity.Direction.DOWN);
+						}
 					}
 				}
+
+				listLock.release();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
 		}
 	}
