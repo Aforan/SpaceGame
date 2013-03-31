@@ -4,7 +4,8 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 
 public class Entity {
-	public int x, y;
+	public int x, y, w, h;
+	public double vx, vy, fx, fy, m;
 	public boolean shouldDie;
 
 	public Entity(int x, int y) {
@@ -22,7 +23,7 @@ public class Entity {
 		return false;
 	}
 
-	public Entity action(int aciton) { 	
+	public Entity[] action(int action) { 	
 		return null;
 	}
 
@@ -34,5 +35,19 @@ public class Entity {
 
 	public enum Direction {
 		UP, DOWN, LEFT, RIGHT, STOPPED_VERTICAL, STOPPED_HORIZONTAL;
+	}
+
+	public void applyForce(double fxx, double fyy, double deltat) {
+		fx += fxx;
+		fy += fyy;
+
+		vx = vx + (fx*deltat/m);
+		vy = vy + (fy*deltat/m);
+
+		x = x + (int) (vx*deltat);
+		y = y + (int) (vy*deltat);
+
+		fx = 0;
+		fy = 0;
 	}
 }

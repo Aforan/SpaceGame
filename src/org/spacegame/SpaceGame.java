@@ -1,77 +1,92 @@
 package org.spacegame;
 
 import javax.swing.*;
-import java.awt.Canvas;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.util.ArrayList;
+
 import java.awt.Color;
-import java.util.Random;
-import java.awt.Rectangle;
 import java.awt.Shape;
+import java.awt.Canvas;
+import java.awt.Graphics;
+import java.awt.Dimension;
+import java.awt.Rectangle;
+
+import java.util.Random;
+import java.util.ArrayList;
 
 import org.spacegame.Entity;
 import org.spacegame.Triangle;
 import org.spacegame.Square;
 import org.spacegame.InputHandler;
+import org.spacegame.CollisionManager;
 
 public class SpaceGame extends JPanel implements Runnable{
 	
+	private static double version = 0.02;
 	public static final int TICK_TIME = 60;
-
 	private static final Random random = new Random();
-	private static double version = 0.01;
-	private Rectangle bounds;
-	private ArrayList<Entity> gameEntities;
-	private InputHandler ih;
+
 	private Entity player;
+	private GameManager gm;
+	private InputHandler ih;
+	private boolean running;
+	private Rectangle bounds;
 	private AsteroidHandler ah;
+	private CollisionManager cm;
 	private AsteroidGenerator ag;
+	private int numKilled, numLost;
+	private ArrayList<Entity> gameEntities;
 
 	public SpaceGame(int w, int h) {
 		super(true);
 		setMaximumSize(new Dimension(w, h));
 		setSize(new Dimension(w, h));
 
+		bounds = new Rectangle(0, 0, w, h-getInsets().top);
+		System.out.println(bounds.height);
+		
 		init();
 
 		int nw = getWidth()-getInsets().right-getInsets().left;
 		int nh = getHeight()-getInsets().top-getInsets().bottom;
 		
 		System.out.println(nw + ", " + nh);
-
-		bounds = new Rectangle(0, 0, w, h-getInsets().top);
-		System.out.println(bounds.height);
 	}
 
 	public void init() {
 		System.out.println("initializing");
 		gameEntities = new ArrayList<Entity>();
 
-		player = new Triangle(100, 500, 25, 25, 0, 0);
-		gameEntities.add(player);
-
-		ArrayList<Entity> asteroidList = new ArrayList<Entity>();
-
-		ah = new AsteroidHandler(asteroidList);
+		ah = new AsteroidHandler();
 		Thread thread = new Thread(ah);
 		thread.start();
+
+		cm = new CollisionManager(bounds);
+		thread = new Thread(cm);
+		thread.start();
+
+		gm = new GameManager();
+		ag = new AsteroidGenerator(0.25, ah);
+
+		player = new Triangle(100, 500, 25, 25, 0, 0);
+		gameEntities.add(player);
 
 		ih = new InputHandler();
 		setFocusable(true);
 		addKeyListener(ih);
 
-		ag = new AsteroidGenerator(0.15);
+		running = true;
 	}
 
 	@Override
 	public void paintComponent(Graphics g) {
+		g.setColor(Color.WHITE);
+		g.drawString("Score: " + gm.score, 25, 25);
+
 		super.paintComponents(g);
 	}
 
 	@Override
 	public void run() {
-		while(true) {
+		while(running) {
 			tick();
 		}
 	}
@@ -109,9 +124,10 @@ public class SpaceGame extends JPanel implements Runnable{
 		}
 
 		if(ih.shoot) {
-			Entity a = player.action(Triangle.SHOOT);
-			 if (a != null) {
-			 	gameEntities.add(a);
+			Entity[] as = player.action(Triangle.SHOOT);
+			 if (as != null) {
+			 	for (Entity a : as) 
+			 		gameEntities.add(a);
 			 }
 		}
 
@@ -125,13 +141,15 @@ public class SpaceGame extends JPanel implements Runnable{
 
 		ah.tick();
 		ag.tick();
+		cm.updateList(gameEntities);
 
 		getNewEntities();
 
+		numLost = 0;
+		numKilled = 0;
+		
 		ArrayList<Entity> del = new ArrayList<Entity>();
-
-		handleCollisions();
-		//System.out.println("x: " + player.x + " y: " + player.y + " " + bounds.width + " " + bounds.height + " " + bounds.x + " " + bounds.y);
+		ArrayList<Entity> addList = new ArrayList<Entity>();
 
 		for (Entity e : gameEntities) {
 
@@ -139,20 +157,53 @@ public class SpaceGame extends JPanel implements Runnable{
 				e.tick(TICK_TIME);
 			}
 
+			if(e instanceof Square) {
+				Square te = (Square)e;
+				if(te.lost) {
+					numLost++;
+					del.add(e);
+				} else if(te.isDead()) {
+					numKilled++;
+				}
+
+				if(te.shouldDie) {
+					Double r = random.nextDouble();
+
+					if (r < 0.005) {
+						Circle c = new Circle(te.x, te.y, te.vx, te.vy);
+						addList.add(c);
+					}
+				}
+			}
+
 			if (e.isDead()) {
+				if(e instanceof Triangle) {
+					lose();
+				}
+
 				del.add(e);
 				continue;
 			}
 			e.paint(g);
 		}
-
+		
 		for (Entity e : del) {
-			if(e instanceof Triangle) {
-				System.out.println("Player died");
-			}
 			gameEntities.remove(e);
+
+			if(e instanceof Square) {
+				ah.removeAsteroid(e);
+			}
 		}
 
+		for (Entity e : addList) {
+			gameEntities.add(e);
+		}
+
+		if (gm.score < 0) {
+			lose();
+		}
+
+		gm.tick(numKilled, numLost);
 		paintComponent(g);		
 	}
 
@@ -165,34 +216,17 @@ public class SpaceGame extends JPanel implements Runnable{
 		}
 	}
 
-	private void handleCollisions() {
-		for (Entity a : gameEntities) {
-			Shape ashape = a.getShape();
-
-			if (!bounds.contains((Rectangle)a.getShape())) a.outOfBounds(bounds);
-
-			for (Entity b : gameEntities) {
-				Shape bshape = b.getShape();
-
-				if (ashape instanceof Rectangle) {
-					if (a != b && ashape.intersects((Rectangle)bshape)) {
-						//System.out.println("Collision!" + a + " -> " + b);
-						a.handleCollision(b);
-						b.handleCollision(a);
-					}
-				}
-			}
-		}
-	}
-
 	private void clearScreen(Graphics g) {
 		g.setColor(Color.black);
 		g.fillRect(0, 0, getWidth(), getHeight());
 	}
 
-	public static void main(String[] args) {
-		System.out.println("test");
+	public void lose() {
+		running = false;
+		System.out.println("HOW DID YOU LOSE THIS EASY ASS GAME??!!!??");
+	}
 
+	public static void main(String[] args) {
 		JFrame frame = new JFrame("Space Game v" + version);
 		frame.setSize(new Dimension(450, 700));
 		//frame.setMaximumSize(new Dimension(450, 700));

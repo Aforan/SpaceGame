@@ -10,14 +10,10 @@ import java.awt.Shape;
 import org.spacegame.Laser;
 
 public class Mob extends Entity {
-	protected static Random r = new Random();
+	protected static Random random = new Random();
 	public static final int SHOOT = 1;
 
 	public double vmaxx, vmaxy;
-
-	public int w, h;
-	protected double vx, vy, m;
-	protected double fx, fy;
 
 	protected int lastShot;
 	protected int shotDelay;
@@ -37,7 +33,7 @@ public class Mob extends Entity {
 		fy = 0.0;
 
 		lastShot = 0;
-		shotDelay = 3;
+		shotDelay = 2;
 		deathAnim = 0;
 		maxDeathAnim = 10;
 
@@ -57,6 +53,9 @@ public class Mob extends Entity {
 		}
 
 		lastShot++;
+
+		fx = 0;
+		fy = 0;
 	}
 
 	@Override
@@ -84,10 +83,13 @@ public class Mob extends Entity {
 	}
 
 	@Override
-	public Entity action(int action) {
+	public Entity[] action(int action) {
 		if(canShoot()) {
 			lastShot = 0;
-			return new Laser(x+w/2, y);
+			Entity[] r = new Entity[1];
+			r[0] = new Laser(x+w/2, y);
+			return r;
+			//return {new Laser(x+w/2, y)};
 		} else return null;
 	}
 

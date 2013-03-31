@@ -9,7 +9,7 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 
 public class Laser extends Entity {
-	private static final double Y_VEL = -0.25;
+	public static final double Y_VEL = -0.25;
 
 	private double vx, vy;
 
@@ -17,6 +17,12 @@ public class Laser extends Entity {
 		super(x, y);
 		this.vx = 0.0;
 		this.vy = Y_VEL;
+	}
+
+	public Laser(int x, int y, double vx, double vy) {
+		super(x, y);
+		this.vx = vx;
+		this.vy = vy;
 	}
 
 	public void tick(double millis) {
@@ -37,7 +43,7 @@ public class Laser extends Entity {
 	@Override
 	public void handleCollision(Entity e) {
 		if (!(e instanceof Laser) && !(e instanceof Triangle)) {
-			shouldDie = true;
+			if (!e.shouldDie) shouldDie = true;
 		}
 	}
 
